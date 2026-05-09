@@ -212,6 +212,12 @@ h2 {
   font-weight: 900;
 }
 
+.self-name {
+  margin-bottom: 4px;
+  color: #2d5f4b;
+  font-weight: 900;
+}
+
 .players {
   display: grid;
   gap: 8px;
@@ -230,8 +236,25 @@ h2 {
   background: #fffaf0;
 }
 
+.players li.is-me {
+  border-color: #2d5f4b;
+  background: #f3fff6;
+}
+
 .players small {
   color: #78613d;
+}
+
+.me-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 22px;
+  margin-left: 8px;
+  border-radius: 999px;
+  padding: 2px 8px;
+  background: #2d5f4b;
+  color: #fffdf5;
+  font-size: 12px;
 }
 
 .clock {

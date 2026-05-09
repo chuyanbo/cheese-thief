@@ -162,6 +162,7 @@ export function App() {
       <section className="private-card">
         <div>
           <p className="eyebrow">你的秘密</p>
+          <p className="self-name">你是 {self?.name ?? "当前玩家"}</p>
           <h2>{secretTitle(me)}</h2>
         </div>
         <div className="dice">{me.dice ? `${me.dice} 点` : "待开局"}</div>
@@ -170,7 +171,7 @@ export function App() {
       {room.phase === "lobby" && (
         <section className="panel">
           <h2>等待玩家</h2>
-          <PlayerList room={room} />
+          <PlayerList room={room} meId={me.playerId} />
           {isHost && (
             <button className="primary full" disabled={room.players.length < 4} onClick={() => emit("startGame", { code: room.code })}>
               开始游戏
@@ -293,19 +294,22 @@ export function App() {
       {room.phase !== "lobby" && (
         <section className="panel compact">
           <h2>玩家</h2>
-          <PlayerList room={room} />
+          <PlayerList room={room} meId={me.playerId} />
         </section>
       )}
     </main>
   );
 }
 
-function PlayerList({ room }: { room: RoomState }) {
+function PlayerList({ room, meId }: { room: RoomState; meId: string }) {
   return (
     <ul className="players">
       {room.players.map((player) => (
-        <li key={player.id}>
-          <span>{player.name}</span>
+        <li key={player.id} className={player.id === meId ? "is-me" : undefined}>
+          <span>
+            {player.name}
+            {player.id === meId && <strong className="me-badge">你</strong>}
+          </span>
           <small>
             {player.isHost ? "房主" : ""} {player.connected ? "在线" : "离线"}
           </small>
