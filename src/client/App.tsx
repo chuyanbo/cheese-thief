@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type MutableRefObject } from "react";
 import { io, type Socket } from "socket.io-client";
 import type { ClientToServerEvents, PrivateState, RoomState, ServerToClientEvents } from "../shared/types";
 
@@ -19,6 +19,8 @@ export function App() {
   const [now, setNow] = useState(Date.now());
   const [soundEnabled, setSoundEnabled] = useState(localStorage.getItem("cheese:sound") !== "off");
   const [audioUnlocked, setAudioUnlocked] = useState(false);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const speechPrimedRef = useRef(false);
 
   useEffect(() => {
     const nextSocket: GameSocket = io(socketUrl, { autoConnect: true });
@@ -39,7 +41,7 @@ export function App() {
 
   useEffect(() => {
     if (!soundEnabled || !audioUnlocked || room?.phase !== "night" || !room.currentHour) return;
-    speakHour(room.currentHour);
+    playHourAnnouncement(room.currentHour, audioContextRef.current);
   }, [audioUnlocked, room?.currentHour, room?.phase, soundEnabled]);
 
   const self = useMemo(() => room?.players.find((player) => player.id === me?.playerId), [room, me]);
@@ -47,7 +49,7 @@ export function App() {
 
   function createRoom() {
     if (!socket) return;
-    unlockAudio();
+    void unlockAudio();
     socket.emit("createRoom", { name }, (response) => {
       if (!response.ok) return setMessage(response.error);
       localStorage.setItem("cheese:name", name.trim());
@@ -61,7 +63,7 @@ export function App() {
 
   function joinRoom() {
     if (!socket) return;
-    unlockAudio();
+    void unlockAudio();
     socket.emit("joinRoom", { name, code }, (response) => {
       if (!response.ok) return setMessage(response.error);
       localStorage.setItem("cheese:name", name.trim());
@@ -78,6 +80,7 @@ export function App() {
     payload: Parameters<ClientToServerEvents[K]>[0]
   ) {
     if (!socket || !room) return;
+    void unlockAudio(false);
     (socket.emit as (eventName: string, eventPayload: unknown) => void)(event, payload);
   }
 
@@ -86,13 +89,19 @@ export function App() {
     setSoundEnabled(next);
     localStorage.setItem("cheese:sound", next ? "on" : "off");
     if (next) {
-      unlockAudio();
-      speak("声音已开启");
+      void unlockAudio(true, true);
     }
   }
 
-  function unlockAudio() {
+  async function unlockAudio(announce = true, force = false) {
+    if (!soundEnabled && !force) return;
     setAudioUnlocked(true);
+    const audioContext = await ensureAudioContext(audioContextRef);
+    playUnlockTone(audioContext);
+    if (announce && !speechPrimedRef.current) {
+      speechPrimedRef.current = true;
+      speak("声音已开启");
+    }
   }
 
   if (!room || !me) {
@@ -140,7 +149,7 @@ export function App() {
         </div>
         <div className="top-actions">
           <button className="icon-button" title={soundEnabled ? "关闭声音" : "开启声音"} onClick={toggleSound}>
-            {soundEnabled ? "声" : "静"}
+            {soundEnabled ? (audioUnlocked ? "声" : "启") : "静"}
           </button>
           <span className={`phase phase-${room.phase}`}>{phaseName(room.phase)}</span>
         </div>
@@ -362,7 +371,8 @@ function formatRemaining(endsAt: number | undefined, now: number): string {
   return `${Math.max(0, Math.ceil((endsAt - now) / 1000))} 秒后进入下一点`;
 }
 
-function speakHour(hour: number) {
+function playHourAnnouncement(hour: number, audioContext: AudioContext | null) {
+  playHourTone(audioContext, hour);
   speak(`${hour}点了`);
 }
 
@@ -374,6 +384,44 @@ function speak(text: string) {
   utterance.rate = 0.95;
   utterance.pitch = 1.05;
   window.speechSynthesis.speak(utterance);
+}
+
+async function ensureAudioContext(audioContextRef: MutableRefObject<AudioContext | null>) {
+  const AudioContextCtor =
+    window.AudioContext ?? (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+  if (!AudioContextCtor) return null;
+  if (!audioContextRef.current) {
+    audioContextRef.current = new AudioContextCtor();
+  }
+  if (audioContextRef.current.state === "suspended") {
+    await audioContextRef.current.resume();
+  }
+  return audioContextRef.current;
+}
+
+function playUnlockTone(audioContext: AudioContext | null) {
+  playTone(audioContext, 660, 0.08, 0.035);
+}
+
+function playHourTone(audioContext: AudioContext | null, hour: number) {
+  const startFrequency = 520 + hour * 28;
+  playTone(audioContext, startFrequency, 0.14, 0.045);
+  window.setTimeout(() => playTone(audioContext, startFrequency * 1.25, 0.16, 0.04), 170);
+}
+
+function playTone(audioContext: AudioContext | null, frequency: number, duration: number, volume: number) {
+  if (!audioContext) return;
+  const oscillator = audioContext.createOscillator();
+  const gain = audioContext.createGain();
+  oscillator.type = "sine";
+  oscillator.frequency.value = frequency;
+  gain.gain.setValueAtTime(0.0001, audioContext.currentTime);
+  gain.gain.exponentialRampToValueAtTime(volume, audioContext.currentTime + 0.015);
+  gain.gain.exponentialRampToValueAtTime(0.0001, audioContext.currentTime + duration);
+  oscillator.connect(gain);
+  gain.connect(audioContext.destination);
+  oscillator.start();
+  oscillator.stop(audioContext.currentTime + duration + 0.03);
 }
 
 function toggleSelection(current: string[], id: string, limit: number): string[] {
