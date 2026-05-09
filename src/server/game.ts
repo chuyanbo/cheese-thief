@@ -260,8 +260,7 @@ function currentSoloInspector(room: Room): Player | undefined {
   if (awake.length !== 1) return undefined;
   const only = awake[0];
   const latestLog = room.nightLog.at(-1);
-  if (only.role === "thief") return undefined;
-  if (latestLog?.cheeseStolen) return undefined;
+  if (latestLog?.cheeseStolen && only.role !== "thief") return undefined;
   if (room.inspectDecisions[room.currentHour ?? 0]) return undefined;
   return only;
 }

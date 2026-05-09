@@ -74,6 +74,20 @@ describe("game engine", () => {
     });
   });
 
+  it("allows a solo thief to inspect another player's dice", () => {
+    const room = makeRoom(4);
+    startGame(room, "p1", randomFrom([0.3, 0.2, 0, 0.2, 0.2]));
+    expect(room.thiefId).toBe("p2");
+    expect(room.currentHour).toBe(1);
+    expect(toPrivateState(room, "p2").canInspect).toBe(true);
+    chooseInspectTarget(room, "p2", "p1");
+    expect(toPrivateState(room, "p2").inspectResults[0]).toMatchObject({
+      targetId: "p1",
+      dice: 2
+    });
+    expect(toPrivateState(room, "p2").canInspect).toBe(false);
+  });
+
   it("resolves over-half votes as mice win when thief is ejected", () => {
     const room = makeRoom(5);
     startGame(room, "p1", randomFrom([0, 0, 0.2, 0.2, 0.4, 0.5]));

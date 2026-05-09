@@ -303,6 +303,14 @@ h2 {
   font-weight: 900;
 }
 
+.inspect-reveal {
+  border-radius: 8px;
+  padding: 10px;
+  background: #e7f4ff;
+  color: #133f61;
+  font-weight: 900;
+}
+
 .action-box,
 .timeline,
 .notes {

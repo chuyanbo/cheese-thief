@@ -190,6 +190,12 @@ export function App() {
             <div className="awake-info">
               <p className="cheese-state">{me.visibleCheesePresent ? "奶酪还在桌上。" : "奶酪已经不见了。"}</p>
               <p>同一时间醒来的玩家：{me.awakePlayerNames.join("、")}</p>
+              {currentInspectResult(me, room.currentHour) && (
+                <p className="inspect-reveal">
+                  你查看了 {currentInspectResult(me, room.currentHour)?.targetName}：
+                  {currentInspectResult(me, room.currentHour)?.dice} 点
+                </p>
+              )}
               {currentPersonalLog(me)?.thiefWitnessedName && (
                 <p className="danger">你看见 {currentPersonalLog(me)?.thiefWitnessedName} 偷走了奶酪。</p>
               )}
@@ -370,6 +376,10 @@ function phaseName(phase: RoomState["phase"]): string {
 
 function currentPersonalLog(me: PrivateState) {
   return me.personalNightLog.find((entry) => entry.hour === me.dice);
+}
+
+function currentInspectResult(me: PrivateState, hour: number | undefined) {
+  return me.inspectResults.find((result) => result.hour === hour);
 }
 
 function formatRemaining(endsAt: number | undefined, now: number): string {
