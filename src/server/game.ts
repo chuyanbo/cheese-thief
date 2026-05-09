@@ -242,7 +242,7 @@ export function advanceNight(room: Room): void {
     awakePlayerNames: awake.map((p) => p.name),
     thiefWitnessedId: cheeseStolen ? room.thiefId : undefined,
     thiefWitnessedName: cheeseStolen ? room.players.find((p) => p.id === room.thiefId)?.name : undefined,
-    endsAt: Date.now() + 10_000
+    endsAt: Date.now() + 15_000
   });
 }
 

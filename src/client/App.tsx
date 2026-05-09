@@ -17,6 +17,8 @@ export function App() {
   const [message, setMessage] = useState("");
   const [selectedAccomplices, setSelectedAccomplices] = useState<string[]>([]);
   const [now, setNow] = useState(Date.now());
+  const [soundEnabled, setSoundEnabled] = useState(localStorage.getItem("cheese:sound") !== "off");
+  const [audioUnlocked, setAudioUnlocked] = useState(false);
 
   useEffect(() => {
     const nextSocket: GameSocket = io(socketUrl, { autoConnect: true });
@@ -35,11 +37,17 @@ export function App() {
     return () => window.clearInterval(timer);
   }, []);
 
+  useEffect(() => {
+    if (!soundEnabled || !audioUnlocked || room?.phase !== "night" || !room.currentHour) return;
+    speakHour(room.currentHour);
+  }, [audioUnlocked, room?.currentHour, room?.phase, soundEnabled]);
+
   const self = useMemo(() => room?.players.find((player) => player.id === me?.playerId), [room, me]);
   const isHost = Boolean(self?.isHost);
 
   function createRoom() {
     if (!socket) return;
+    unlockAudio();
     socket.emit("createRoom", { name }, (response) => {
       if (!response.ok) return setMessage(response.error);
       localStorage.setItem("cheese:name", name.trim());
@@ -53,6 +61,7 @@ export function App() {
 
   function joinRoom() {
     if (!socket) return;
+    unlockAudio();
     socket.emit("joinRoom", { name, code }, (response) => {
       if (!response.ok) return setMessage(response.error);
       localStorage.setItem("cheese:name", name.trim());
@@ -70,6 +79,20 @@ export function App() {
   ) {
     if (!socket || !room) return;
     (socket.emit as (eventName: string, eventPayload: unknown) => void)(event, payload);
+  }
+
+  function toggleSound() {
+    const next = !soundEnabled;
+    setSoundEnabled(next);
+    localStorage.setItem("cheese:sound", next ? "on" : "off");
+    if (next) {
+      unlockAudio();
+      speak("声音已开启");
+    }
+  }
+
+  function unlockAudio() {
+    setAudioUnlocked(true);
   }
 
   if (!room || !me) {
@@ -115,7 +138,12 @@ export function App() {
           <p className="eyebrow">房间 {room.code}</p>
           <h1>奶酪大盗</h1>
         </div>
-        <span className={`phase phase-${room.phase}`}>{phaseName(room.phase)}</span>
+        <div className="top-actions">
+          <button className="icon-button" title={soundEnabled ? "关闭声音" : "开启声音"} onClick={toggleSound}>
+            {soundEnabled ? "声" : "静"}
+          </button>
+          <span className={`phase phase-${room.phase}`}>{phaseName(room.phase)}</span>
+        </div>
       </header>
 
       {message && <p className="toast">{message}</p>}
@@ -332,6 +360,20 @@ function currentPersonalLog(me: PrivateState) {
 function formatRemaining(endsAt: number | undefined, now: number): string {
   if (!endsAt) return "等待下一次钟声";
   return `${Math.max(0, Math.ceil((endsAt - now) / 1000))} 秒后进入下一点`;
+}
+
+function speakHour(hour: number) {
+  speak(`${hour}点了`);
+}
+
+function speak(text: string) {
+  if (!("speechSynthesis" in window)) return;
+  window.speechSynthesis.cancel();
+  const utterance = new SpeechSynthesisUtterance(text);
+  utterance.lang = "zh-CN";
+  utterance.rate = 0.95;
+  utterance.pitch = 1.05;
+  window.speechSynthesis.speak(utterance);
 }
 
 function toggleSelection(current: string[], id: string, limit: number): string[] {

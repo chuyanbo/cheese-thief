@@ -167,7 +167,7 @@ function scheduleNightTimer(io: Server<ClientToServerEvents, ServerToClientEvent
   if (room.phase !== "night" || !room.currentHour) return;
 
   const hourLog = room.nightLog.find((entry) => entry.hour === room.currentHour);
-  const delay = Math.max(0, (hourLog?.endsAt ?? Date.now() + 10_000) - Date.now());
+  const delay = Math.max(0, (hourLog?.endsAt ?? Date.now() + 15_000) - Date.now());
   const timer = setTimeout(() => {
     const beforePhase = room.phase;
     skipCurrentInspect(room);

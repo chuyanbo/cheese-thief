@@ -103,6 +103,21 @@ label {
   gap: 14px;
 }
 
+.top-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.icon-button {
+  width: 42px;
+  min-height: 42px;
+  border-radius: 50%;
+  padding: 0;
+  background: #fffdf5;
+  font-size: 14px;
+}
+
 .topbar {
   margin-bottom: 16px;
 }
