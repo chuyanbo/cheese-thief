@@ -118,6 +118,15 @@ label {
   font-size: 14px;
 }
 
+.reset-button {
+  min-height: 42px;
+  border-color: #d08b4c;
+  padding: 0 12px;
+  background: #fff3e6;
+  color: #66340b;
+  font-size: 14px;
+}
+
 .topbar {
   margin-bottom: 16px;
 }

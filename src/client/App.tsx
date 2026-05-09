@@ -153,6 +153,11 @@ export function App() {
           <button className="icon-button" title={soundEnabled ? "关闭声音" : "开启声音"} onClick={toggleSound}>
             {soundEnabled ? (audioUnlocked ? "声" : "启") : "静"}
           </button>
+          {isHost && room.phase !== "lobby" && (
+            <button className="reset-button" onClick={() => emit("restartGame", { code: room.code })}>
+              重开
+            </button>
+          )}
           <span className={`phase phase-${room.phase}`}>{phaseName(room.phase)}</span>
         </div>
       </header>
@@ -264,9 +269,6 @@ export function App() {
           <h2>房主操作</h2>
           <button className="primary full" onClick={() => emit("beginVoting", { code: room.code })}>
             进入投票
-          </button>
-          <button className="full" onClick={() => emit("restartGame", { code: room.code })}>
-            重新开局
           </button>
         </section>
       )}

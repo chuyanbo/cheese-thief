@@ -9,6 +9,7 @@ import {
   skipCurrentInspect,
   startGame,
   submitVote,
+  restartGame,
   toPrivateState,
   toRoomState,
   type Room
@@ -138,5 +139,15 @@ describe("game engine", () => {
     expect(toRoomState(room).nightLog).toHaveLength(0);
     expect(toPrivateState(room, "p4").personalNightLog).toHaveLength(1);
     expect(toPrivateState(room, "p2").personalNightLog.every((entry) => entry.awakePlayerNames.includes("玩家2"))).toBe(true);
+  });
+
+  it("lets the host restart from an active game phase", () => {
+    const room = makeRoom(4);
+    startGame(room, "p1", randomFrom([0, 0, 0.2, 0.2, 0.4]));
+    expect(room.phase).toBe("night");
+    restartGame(room, "p1");
+    expect(room.phase).toBe("lobby");
+    expect(room.thiefId).toBeUndefined();
+    expect(room.players.every((player) => !player.role && !player.dice && player.inspectResults.length === 0)).toBe(true);
   });
 });
