@@ -186,6 +186,25 @@ export function App() {
         </section>
       )}
 
+      {room.phase === "confirm" && (
+        <section className="panel confirm-panel">
+          <h2>确认身份</h2>
+          <p className="hint">请确认你的身份和醒来时间。所有玩家确认后，夜晚从 1 点开始。</p>
+          <div className="confirm-secret">
+            <span>{secretTitle(me)}</span>
+            <strong>{me.dice} 点醒来</strong>
+          </div>
+          <button
+            className="primary full"
+            disabled={me.identityConfirmed}
+            onClick={() => emit("confirmIdentity", { code: room.code })}
+          >
+            {me.identityConfirmed ? "已确认，等待其他玩家" : "我已确认"}
+          </button>
+          <PlayerList room={room} meId={me.playerId} />
+        </section>
+      )}
+
       {room.phase === "night" && (
         <section className="panel night">
           <div className="clock">{room.currentHour} 点</div>
@@ -299,7 +318,7 @@ export function App() {
         </section>
       )}
 
-      {room.phase !== "lobby" && (
+      {room.phase !== "lobby" && room.phase !== "confirm" && (
         <section className="panel compact">
           <h2>玩家</h2>
           <PlayerList room={room} meId={me.playerId} />
@@ -320,6 +339,7 @@ function PlayerList({ room, meId }: { room: RoomState; meId: string }) {
           </span>
           <small>
             {player.isHost ? "房主" : ""} {player.connected ? "在线" : "离线"}
+            {player.hasConfirmed ? " 已确认" : ""}
           </small>
         </li>
       ))}
@@ -367,6 +387,7 @@ function secretTitle(me: PrivateState): string {
 function phaseName(phase: RoomState["phase"]): string {
   const names: Record<RoomState["phase"], string> = {
     lobby: "大厅",
+    confirm: "确认",
     night: "夜晚",
     accomplice: "共犯",
     discussion: "讨论",

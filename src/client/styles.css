@@ -328,6 +328,27 @@ h2 {
   text-align: left;
 }
 
+.confirm-panel {
+  display: grid;
+  gap: 12px;
+}
+
+.confirm-secret {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border: 1px solid #ead99e;
+  border-radius: 8px;
+  padding: 14px;
+  background: #fffaf0;
+}
+
+.confirm-secret span,
+.confirm-secret strong {
+  font-size: 18px;
+}
+
 .timeline p,
 .notes p {
   margin: 0;

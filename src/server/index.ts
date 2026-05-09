@@ -7,6 +7,7 @@ import type { ClientToServerEvents, ServerToClientEvents } from "../shared/types
 import {
   addOrReconnectPlayer,
   advanceNight,
+  confirmIdentity,
   beginVoting,
   chooseAccomplices,
   chooseInspectTarget,
@@ -64,6 +65,10 @@ export function buildApp() {
 
     socket.on("startGame", ({ code }) => {
       mutate(socket, code, (room, playerId) => startGame(room, playerId));
+    });
+
+    socket.on("confirmIdentity", ({ code }) => {
+      mutate(socket, code, (room, playerId) => confirmIdentity(room, playerId));
     });
 
     socket.on("chooseInspectTarget", ({ code, targetId }) => {

@@ -4,6 +4,7 @@ import {
   advanceNight,
   beginVoting,
   chooseInspectTarget,
+  confirmIdentity,
   createPlayer,
   createRoom,
   skipCurrentInspect,
@@ -36,6 +37,12 @@ function finishNight(room: Room) {
   }
 }
 
+function confirmAll(room: Room) {
+  for (const player of room.players) {
+    if (room.phase === "confirm") confirmIdentity(room, player.id);
+  }
+}
+
 describe("game engine", () => {
   it.each([
     [4, 0],
@@ -46,6 +53,7 @@ describe("game engine", () => {
   ])("sets roles and accomplice count for %i players", (count, accomplices) => {
     const room = makeRoom(count);
     startGame(room, "p1", randomFrom([0.1, 0, 0.2, 0.4, 0.6, 0.8, 0.1, 0.3, 0.5]));
+    expect(room.phase).toBe("confirm");
     expect(room.players.filter((player) => player.role === "thief")).toHaveLength(1);
     expect(room.requiredAccomplices).toBe(accomplices);
     expect(room.players.every((player) => player.dice && player.dice >= 1 && player.dice <= 6)).toBe(true);
@@ -63,6 +71,7 @@ describe("game engine", () => {
   it("steals cheese when the thief wakes and allows a later solo mouse to inspect", () => {
     const room = makeRoom(4);
     startGame(room, "p1", randomFrom([0, 0, 0.2, 0.2, 0.4]));
+    confirmAll(room);
     expect(room.cheesePresent).toBe(false);
     advanceNight(room);
     advanceNight(room);
@@ -78,6 +87,7 @@ describe("game engine", () => {
   it("allows a solo thief to inspect another player's dice", () => {
     const room = makeRoom(4);
     startGame(room, "p1", randomFrom([0.3, 0.2, 0, 0.2, 0.2]));
+    confirmAll(room);
     expect(room.thiefId).toBe("p2");
     expect(room.currentHour).toBe(1);
     expect(toPrivateState(room, "p2").canInspect).toBe(true);
@@ -92,6 +102,7 @@ describe("game engine", () => {
   it("resolves over-half votes as mice win when thief is ejected", () => {
     const room = makeRoom(5);
     startGame(room, "p1", randomFrom([0, 0, 0.2, 0.2, 0.4, 0.5]));
+    confirmAll(room);
     finishNight(room);
     room.phase = "discussion";
     beginVoting(room, "p1");
@@ -134,6 +145,7 @@ describe("game engine", () => {
   it("hides global night logs and only exposes a player's awake observations", () => {
     const room = makeRoom(4);
     startGame(room, "p1", randomFrom([0, 0, 0.2, 0.2, 0.4]));
+    confirmAll(room);
     advanceNight(room);
     advanceNight(room);
     expect(toRoomState(room).nightLog).toHaveLength(0);
@@ -144,7 +156,7 @@ describe("game engine", () => {
   it("lets the host restart from an active game phase", () => {
     const room = makeRoom(4);
     startGame(room, "p1", randomFrom([0, 0, 0.2, 0.2, 0.4]));
-    expect(room.phase).toBe("night");
+    expect(room.phase).toBe("confirm");
     restartGame(room, "p1");
     expect(room.phase).toBe("lobby");
     expect(room.thiefId).toBeUndefined();

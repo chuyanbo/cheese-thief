@@ -1,4 +1,4 @@
-export type Phase = "lobby" | "night" | "accomplice" | "discussion" | "voting" | "result";
+export type Phase = "lobby" | "confirm" | "night" | "accomplice" | "discussion" | "voting" | "result";
 
 export type Role = "mouse" | "thief";
 
@@ -7,6 +7,7 @@ export type PlayerSummary = {
   name: string;
   connected: boolean;
   isHost: boolean;
+  hasConfirmed?: boolean;
   hasVoted?: boolean;
 };
 
@@ -66,6 +67,7 @@ export type PrivateState = {
   playerId: string;
   role?: Role;
   dice?: number;
+  identityConfirmed: boolean;
   isAccomplice: boolean;
   isAwake: boolean;
   visibleCheesePresent?: boolean;
@@ -86,6 +88,7 @@ export type ClientToServerEvents = {
   createRoom: (payload: { name: string }, ack: Ack<{ room: RoomState; privateState: PrivateState }>) => void;
   joinRoom: (payload: { code: string; name: string }, ack: Ack<{ room: RoomState; privateState: PrivateState }>) => void;
   startGame: (payload: { code: string }) => void;
+  confirmIdentity: (payload: { code: string }) => void;
   chooseInspectTarget: (payload: { code: string; targetId: string }) => void;
   skipInspect: (payload: { code: string }) => void;
   chooseAccomplice: (payload: { code: string; targetIds: string[] }) => void;

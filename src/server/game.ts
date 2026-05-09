@@ -17,6 +17,7 @@ export type Player = {
   connected: boolean;
   role?: Role;
   dice?: number;
+  identityConfirmed: boolean;
   isAccomplice: boolean;
   inspectResults: InspectResult[];
   votedForId?: string;
@@ -60,6 +61,7 @@ export function createPlayer(id: string, name: string, socketId?: string): Playe
     name: name.trim(),
     socketId,
     connected: true,
+    identityConfirmed: false,
     isAccomplice: false,
     inspectResults: []
   };
@@ -99,7 +101,7 @@ export function startGame(room: Room, hostId: string, random = Math.random): voi
   }
 
   resetRound(room);
-  room.phase = "night";
+  room.phase = "confirm";
   room.requiredAccomplices = accompliceCount(room.players.length);
   const thief = pick(room.players, random);
   room.thiefId = thief.id;
@@ -107,7 +109,16 @@ export function startGame(room: Room, hostId: string, random = Math.random): voi
     player.role = player.id === thief.id ? "thief" : "mouse";
     player.dice = 1 + Math.floor(random() * 6);
   }
-  advanceNight(room);
+}
+
+export function confirmIdentity(room: Room, playerId: string): void {
+  if (room.phase !== "confirm") throw new Error("现在不是身份确认阶段。");
+  const player = findPlayer(room, playerId);
+  player.identityConfirmed = true;
+  if (room.players.every((p) => p.identityConfirmed)) {
+    room.phase = "night";
+    advanceNight(room);
+  }
 }
 
 export function chooseInspectTarget(room: Room, playerId: string, targetId: string): void {
@@ -198,6 +209,7 @@ export function toPrivateState(room: Room, playerId: string): PrivateState {
     playerId: player.id,
     role: player.role,
     dice: player.dice,
+    identityConfirmed: player.identityConfirmed,
     isAccomplice: player.isAccomplice,
     isAwake: awake,
     visibleCheesePresent: awake || room.phase !== "night" ? room.cheesePresent : undefined,
@@ -318,6 +330,7 @@ function resetRound(room: Room): void {
   for (const player of room.players) {
     player.role = undefined;
     player.dice = undefined;
+    player.identityConfirmed = false;
     player.isAccomplice = false;
     player.inspectResults = [];
     player.votedForId = undefined;
@@ -336,6 +349,7 @@ function toPlayerSummary(room: Room, player: Player): PlayerSummary {
     name: player.name,
     connected: player.connected,
     isHost: player.id === room.hostId,
+    hasConfirmed: room.phase === "confirm" ? player.identityConfirmed : undefined,
     hasVoted: room.phase === "voting" || room.phase === "result" ? Boolean(player.votedForId) : undefined
   };
 }
