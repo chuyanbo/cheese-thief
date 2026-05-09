@@ -21,6 +21,7 @@ export function App() {
   const [audioUnlocked, setAudioUnlocked] = useState(false);
   const audioContextRef = useRef<AudioContext | null>(null);
   const hourAudioRef = useRef<Map<number, HTMLAudioElement>>(new Map());
+  const clipAudioRef = useRef<Map<string, HTMLAudioElement>>(new Map());
   const speechPrimedRef = useRef(false);
 
   useEffect(() => {
@@ -44,6 +45,16 @@ export function App() {
     if (!soundEnabled || !audioUnlocked || room?.phase !== "night" || !room.currentHour) return;
     void playHourAnnouncement(room.currentHour, audioContextRef.current, hourAudioRef.current);
   }, [audioUnlocked, room?.currentHour, room?.phase, soundEnabled]);
+
+  useEffect(() => {
+    if (!soundEnabled || !audioUnlocked) return;
+    if (room?.phase === "accomplice") {
+      void playLocalClip("choose-accomplice", clipAudioRef.current, "奶酪大盗选择共犯");
+    }
+    if (room?.phase === "discussion") {
+      void playLocalClip("daybreak", clipAudioRef.current, "天亮了");
+    }
+  }, [audioUnlocked, room?.phase, soundEnabled]);
 
   const self = useMemo(() => room?.players.find((player) => player.id === me?.playerId), [room, me]);
   const isHost = Boolean(self?.isHost);
@@ -99,6 +110,7 @@ export function App() {
     setAudioUnlocked(true);
     const audioContext = await ensureAudioContext(audioContextRef);
     void primeHourAudio(hourAudioRef.current);
+    void primeClipAudio(clipAudioRef.current);
     playUnlockTone(audioContext);
     if (announce && !speechPrimedRef.current) {
       speechPrimedRef.current = true;
@@ -246,6 +258,7 @@ export function App() {
       {room.phase === "accomplice" && (
         <section className="panel">
           <h2>{me.canChooseAccomplice ? "选择共犯" : "等待大盗选择共犯"}</h2>
+          <p className="countdown">{formatRemaining(room.phaseEndsAt, now)}</p>
           {me.canChooseAccomplice && (
             <>
               <p className="hint">需要选择 {room.requiredAccomplices} 名玩家。</p>
@@ -321,6 +334,7 @@ export function App() {
       {room.phase !== "lobby" && room.phase !== "confirm" && (
         <section className="panel compact">
           <h2>玩家</h2>
+          <GameSummary room={room} />
           <PlayerList room={room} meId={me.playerId} />
         </section>
       )}
@@ -344,6 +358,14 @@ function PlayerList({ room, meId }: { room: RoomState; meId: string }) {
         </li>
       ))}
     </ul>
+  );
+}
+
+function GameSummary({ room }: { room: RoomState }) {
+  return (
+    <p className="game-summary">
+      本局 {room.players.length} 名玩家，1 个奶酪大盗，{room.requiredAccomplices} 个共犯
+    </p>
   );
 }
 
@@ -449,6 +471,22 @@ async function primeHourAudio(hourAudio: Map<number, HTMLAudioElement>) {
   }
 }
 
+async function primeClipAudio(clipAudio: Map<string, HTMLAudioElement>) {
+  for (const name of ["choose-accomplice", "daybreak"]) {
+    const audio = getClipAudio(name, clipAudio);
+    try {
+      audio.muted = true;
+      await audio.play();
+      audio.pause();
+      audio.currentTime = 0;
+      audio.muted = false;
+    } catch {
+      audio.muted = false;
+      audio.load();
+    }
+  }
+}
+
 async function playRecordedHour(hour: number, hourAudio: Map<number, HTMLAudioElement>) {
   const audio = getHourAudio(hour, hourAudio);
   audio.pause();
@@ -464,6 +502,28 @@ function getHourAudio(hour: number, hourAudio: Map<number, HTMLAudioElement>) {
   audio.preload = "auto";
   audio.setAttribute("playsinline", "true");
   hourAudio.set(hour, audio);
+  return audio;
+}
+
+async function playLocalClip(name: string, clipAudio: Map<string, HTMLAudioElement>, fallbackText: string) {
+  try {
+    const audio = getClipAudio(name, clipAudio);
+    audio.pause();
+    audio.currentTime = 0;
+    await audio.play();
+  } catch {
+    speak(fallbackText);
+  }
+}
+
+function getClipAudio(name: string, clipAudio: Map<string, HTMLAudioElement>) {
+  const existing = clipAudio.get(name);
+  if (existing) return existing;
+
+  const audio = new Audio(`/audio/${name}.mp3`);
+  audio.preload = "auto";
+  audio.setAttribute("playsinline", "true");
+  clipAudio.set(name, audio);
   return audio;
 }
 

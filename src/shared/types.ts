@@ -56,6 +56,7 @@ export type RoomState = {
   players: PlayerSummary[];
   hostId: string;
   currentHour?: number;
+  phaseEndsAt?: number;
   cheesePresent?: boolean;
   requiredAccomplices: number;
   selectedAccomplices: number;

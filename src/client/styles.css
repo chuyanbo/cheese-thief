@@ -235,6 +235,16 @@ h2 {
   list-style: none;
 }
 
+.game-summary {
+  margin-bottom: 12px;
+  border: 1px solid #d7c77e;
+  border-radius: 8px;
+  padding: 10px 12px;
+  background: #fff2ba;
+  color: #4d3a09;
+  font-weight: 900;
+}
+
 .players li {
   display: flex;
   justify-content: space-between;

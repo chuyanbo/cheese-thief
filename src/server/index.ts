@@ -13,6 +13,7 @@ import {
   chooseInspectTarget,
   createPlayer,
   createRoom,
+  finalizeAccompliceSelection,
   markDisconnected,
   restartGame,
   skipCurrentInspect,
@@ -134,7 +135,7 @@ function mutate(
       socket.nsp.to(room.code).emit("gameResult", room.result);
     }
     broadcastRoom(socket.nsp, room);
-    scheduleNightTimer(socket.nsp, room);
+    schedulePhaseTimer(socket.nsp, room);
   } catch (error) {
     socket.emit("error", error instanceof Error ? error.message : "操作失败。");
   }
@@ -165,21 +166,31 @@ function broadcastRoom(io: Server<ClientToServerEvents, ServerToClientEvents>, r
   }
 }
 
-function scheduleNightTimer(io: Server<ClientToServerEvents, ServerToClientEvents>, room: Room): void {
+function schedulePhaseTimer(io: Server<ClientToServerEvents, ServerToClientEvents>, room: Room): void {
   const existing = nightTimers.get(room.code);
   if (existing) clearTimeout(existing);
   nightTimers.delete(room.code);
-  if (room.phase !== "night" || !room.currentHour) return;
 
-  const hourLog = room.nightLog.find((entry) => entry.hour === room.currentHour);
-  const delay = Math.max(0, (hourLog?.endsAt ?? Date.now() + 15_000) - Date.now());
+  const endsAt =
+    room.phase === "night" && room.currentHour
+      ? room.nightLog.find((entry) => entry.hour === room.currentHour)?.endsAt
+      : room.phase === "accomplice"
+        ? room.phaseEndsAt
+        : undefined;
+  if (!endsAt) return;
+
+  const delay = Math.max(0, endsAt - Date.now());
   const timer = setTimeout(() => {
     const beforePhase = room.phase;
-    skipCurrentInspect(room);
-    advanceNight(room);
+    if (room.phase === "night") {
+      skipCurrentInspect(room);
+      advanceNight(room);
+    } else if (room.phase === "accomplice") {
+      finalizeAccompliceSelection(room);
+    }
     if (room.phase !== beforePhase) io.to(room.code).emit("phaseChanged", room.phase);
     broadcastRoom(io, room);
-    scheduleNightTimer(io, room);
+    schedulePhaseTimer(io, room);
   }, delay);
   nightTimers.set(room.code, timer);
 }

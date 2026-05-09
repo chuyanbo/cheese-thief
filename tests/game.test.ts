@@ -7,6 +7,7 @@ import {
   confirmIdentity,
   createPlayer,
   createRoom,
+  finalizeAccompliceSelection,
   skipCurrentInspect,
   startGame,
   submitVote,
@@ -161,5 +162,18 @@ describe("game engine", () => {
     expect(room.phase).toBe("lobby");
     expect(room.thiefId).toBeUndefined();
     expect(room.players.every((player) => !player.role && !player.dice && player.inspectResults.length === 0)).toBe(true);
+  });
+
+  it("sets a timed accomplice phase and can auto-select accomplices", () => {
+    const room = makeRoom(5);
+    startGame(room, "p1", randomFrom([0, 0, 0.2, 0.2, 0.4, 0.5]));
+    confirmAll(room);
+    finishNight(room);
+    expect(room.phase).toBe("accomplice");
+    expect(room.phaseEndsAt).toBeGreaterThan(Date.now());
+    finalizeAccompliceSelection(room, randomFrom([0.1, 0.2, 0.3, 0.4]));
+    expect(room.phase).toBe("discussion");
+    expect(room.phaseEndsAt).toBeUndefined();
+    expect(room.selectedAccompliceIds).toHaveLength(1);
   });
 });

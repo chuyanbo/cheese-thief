@@ -29,6 +29,7 @@ export type Room = {
   players: Player[];
   hostId: string;
   currentHour?: number;
+  phaseEndsAt?: number;
   cheesePresent: boolean;
   thiefId?: string;
   requiredAccomplices: number;
@@ -146,6 +147,20 @@ export function skipCurrentInspect(room: Room): void {
 export function chooseAccomplices(room: Room, playerId: string, targetIds: string[]): void {
   if (room.phase !== "accomplice") throw new Error("现在不能选择共犯。");
   if (room.thiefId !== playerId) throw new Error("只有奶酪大盗可以选择共犯。");
+  setAccomplices(room, targetIds);
+}
+
+export function finalizeAccompliceSelection(room: Room, random = Math.random): void {
+  if (room.phase !== "accomplice") return;
+  const candidates = room.players.filter((player) => player.id !== room.thiefId);
+  const shuffled = shuffle(candidates, random);
+  setAccomplices(
+    room,
+    shuffled.slice(0, room.requiredAccomplices).map((player) => player.id)
+  );
+}
+
+function setAccomplices(room: Room, targetIds: string[]): void {
   if (targetIds.length !== room.requiredAccomplices) {
     throw new Error(`请选择 ${room.requiredAccomplices} 名共犯。`);
   }
@@ -157,6 +172,7 @@ export function chooseAccomplices(room: Room, playerId: string, targetIds: strin
     player.isAccomplice = true;
   }
   room.selectedAccompliceIds = targetIds;
+  room.phaseEndsAt = undefined;
   room.phase = "discussion";
 }
 
@@ -192,6 +208,7 @@ export function toRoomState(room: Room): RoomState {
     players: room.players.map((p) => toPlayerSummary(room, p)),
     hostId: room.hostId,
     currentHour: room.currentHour,
+    phaseEndsAt: room.phaseEndsAt,
     cheesePresent: room.phase === "night" ? undefined : room.cheesePresent,
     requiredAccomplices: room.requiredAccomplices,
     selectedAccomplices: room.selectedAccompliceIds.length,
@@ -234,11 +251,18 @@ export function advanceNight(room: Room): void {
   const nextHour = (room.currentHour ?? 0) + 1;
   if (nextHour > 6) {
     room.currentHour = undefined;
-    room.phase = room.requiredAccomplices > 0 ? "accomplice" : "discussion";
+    if (room.requiredAccomplices > 0) {
+      room.phase = "accomplice";
+      room.phaseEndsAt = Date.now() + 15_000;
+    } else {
+      room.phase = "discussion";
+      room.phaseEndsAt = undefined;
+    }
     return;
   }
 
   room.currentHour = nextHour;
+  room.phaseEndsAt = undefined;
   const awake = currentAwakePlayers(room);
   const cheesePresentAtStart = room.cheesePresent;
   const thiefAwake = awake.some((p) => p.id === room.thiefId);
@@ -320,6 +344,7 @@ function resolveVotes(room: Room): GameResult {
 
 function resetRound(room: Room): void {
   room.currentHour = undefined;
+  room.phaseEndsAt = undefined;
   room.cheesePresent = true;
   room.thiefId = undefined;
   room.requiredAccomplices = 0;
@@ -370,6 +395,10 @@ function assertHost(room: Room, playerId: string): void {
 
 function pick<T>(items: T[], random: () => number): T {
   return items[Math.floor(random() * items.length)];
+}
+
+function shuffle<T>(items: T[], random: () => number): T[] {
+  return [...items].sort(() => random() - 0.5);
 }
 
 function sameName(a: string, b: string): boolean {
