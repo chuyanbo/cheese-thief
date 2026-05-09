@@ -1,0 +1,297 @@
+:root {
+  color: #281e16;
+  background: #fff7df;
+  font-family: Inter, "Segoe UI", system-ui, -apple-system, sans-serif;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+}
+
+button,
+input {
+  font: inherit;
+}
+
+button {
+  min-height: 48px;
+  border: 1px solid #d9b85d;
+  border-radius: 8px;
+  background: #fffdf5;
+  color: #281e16;
+  font-weight: 700;
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+button.primary {
+  border-color: #22180f;
+  background: #f6c945;
+  color: #21170b;
+}
+
+button.ghost {
+  background: transparent;
+}
+
+button.selected {
+  border-color: #2d5f4b;
+  background: #d7f0df;
+}
+
+input {
+  width: 100%;
+  min-height: 48px;
+  border: 1px solid #d9caa2;
+  border-radius: 8px;
+  padding: 0 14px;
+  background: #fffef8;
+  color: #281e16;
+  font-size: 16px;
+}
+
+label {
+  display: grid;
+  gap: 8px;
+  font-weight: 700;
+}
+
+.app {
+  width: min(100%, 720px);
+  min-height: 100vh;
+  margin: 0 auto;
+  padding: 18px;
+}
+
+.shell {
+  display: grid;
+  place-items: center;
+}
+
+.join-panel,
+.panel,
+.private-card {
+  border: 1px solid #ead99e;
+  border-radius: 8px;
+  background: rgba(255, 253, 245, 0.92);
+  box-shadow: 0 18px 50px rgba(75, 46, 10, 0.08);
+}
+
+.join-panel {
+  width: min(100%, 420px);
+  display: grid;
+  gap: 18px;
+  padding: 22px;
+}
+
+.topbar,
+.private-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.topbar {
+  margin-bottom: 16px;
+}
+
+.private-card,
+.panel {
+  margin-bottom: 14px;
+  padding: 16px;
+}
+
+.panel.compact {
+  padding: 12px;
+}
+
+.eyebrow {
+  margin: 0 0 4px;
+  color: #836116;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+h1,
+h2,
+p {
+  margin-top: 0;
+}
+
+h1 {
+  margin-bottom: 0;
+  font-size: 30px;
+  line-height: 1.05;
+}
+
+h2 {
+  margin-bottom: 12px;
+  font-size: 20px;
+}
+
+.intro,
+.hint {
+  color: #6d5b3b;
+  line-height: 1.5;
+}
+
+.button-row,
+.grid-buttons {
+  display: grid;
+  gap: 10px;
+}
+
+.button-row {
+  grid-template-columns: 1fr 1fr;
+}
+
+.grid-buttons {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.full {
+  width: 100%;
+  margin-top: 10px;
+}
+
+.toast {
+  margin: 0;
+  border: 1px solid #d7c77e;
+  border-radius: 8px;
+  padding: 10px 12px;
+  background: #fff2ba;
+  color: #4d3a09;
+}
+
+.phase {
+  border-radius: 999px;
+  padding: 8px 12px;
+  background: #2d5f4b;
+  color: #fffdf5;
+  font-size: 13px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.dice {
+  flex: 0 0 auto;
+  border-radius: 8px;
+  padding: 12px;
+  background: #281e16;
+  color: #fff7df;
+  font-size: 20px;
+  font-weight: 900;
+}
+
+.players {
+  display: grid;
+  gap: 8px;
+  margin: 0 0 14px;
+  padding: 0;
+  list-style: none;
+}
+
+.players li {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  border: 1px solid #efe0af;
+  border-radius: 8px;
+  padding: 10px 12px;
+  background: #fffaf0;
+}
+
+.players small {
+  color: #78613d;
+}
+
+.clock {
+  width: 96px;
+  height: 96px;
+  display: grid;
+  place-items: center;
+  margin: 0 auto 14px;
+  border: 8px solid #f6c945;
+  border-radius: 50%;
+  background: #fffdf5;
+  font-size: 28px;
+  font-weight: 900;
+}
+
+.night {
+  text-align: center;
+}
+
+.cheese-state {
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.countdown {
+  margin-bottom: 12px;
+  color: #6d5b3b;
+  font-weight: 800;
+}
+
+.awake-info {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.awake-info p {
+  margin-bottom: 0;
+}
+
+.danger {
+  border-radius: 8px;
+  padding: 10px;
+  background: #ffe1d6;
+  color: #7c2112;
+  font-weight: 900;
+}
+
+.action-box,
+.timeline,
+.notes {
+  display: grid;
+  gap: 10px;
+  text-align: left;
+}
+
+.timeline p,
+.notes p {
+  margin: 0;
+  border-left: 4px solid #f6c945;
+  padding: 8px 10px;
+  background: #fffaf0;
+}
+
+.result {
+  border-color: #2d5f4b;
+  background: #f3fff6;
+}
+
+@media (min-width: 680px) {
+  .app {
+    padding: 28px;
+  }
+
+  .grid-buttons {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
