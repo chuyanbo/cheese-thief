@@ -20,6 +20,7 @@ export function App() {
   const [soundEnabled, setSoundEnabled] = useState(localStorage.getItem("cheese:sound") !== "off");
   const [audioUnlocked, setAudioUnlocked] = useState(false);
   const audioContextRef = useRef<AudioContext | null>(null);
+  const hourAudioRef = useRef<Map<number, HTMLAudioElement>>(new Map());
   const speechPrimedRef = useRef(false);
 
   useEffect(() => {
@@ -41,7 +42,7 @@ export function App() {
 
   useEffect(() => {
     if (!soundEnabled || !audioUnlocked || room?.phase !== "night" || !room.currentHour) return;
-    playHourAnnouncement(room.currentHour, audioContextRef.current);
+    void playHourAnnouncement(room.currentHour, audioContextRef.current, hourAudioRef.current);
   }, [audioUnlocked, room?.currentHour, room?.phase, soundEnabled]);
 
   const self = useMemo(() => room?.players.find((player) => player.id === me?.playerId), [room, me]);
@@ -97,6 +98,7 @@ export function App() {
     if (!soundEnabled && !force) return;
     setAudioUnlocked(true);
     const audioContext = await ensureAudioContext(audioContextRef);
+    void primeHourAudio(hourAudioRef.current);
     playUnlockTone(audioContext);
     if (announce && !speechPrimedRef.current) {
       speechPrimedRef.current = true;
@@ -371,9 +373,17 @@ function formatRemaining(endsAt: number | undefined, now: number): string {
   return `${Math.max(0, Math.ceil((endsAt - now) / 1000))} 秒后进入下一点`;
 }
 
-function playHourAnnouncement(hour: number, audioContext: AudioContext | null) {
+async function playHourAnnouncement(
+  hour: number,
+  audioContext: AudioContext | null,
+  hourAudio: Map<number, HTMLAudioElement>
+) {
   playHourTone(audioContext, hour);
-  speak(`${hour}点了`);
+  try {
+    await playRecordedHour(hour, hourAudio);
+  } catch {
+    speak(`${hour}点了`);
+  }
 }
 
 function speak(text: string) {
@@ -384,6 +394,50 @@ function speak(text: string) {
   utterance.rate = 0.95;
   utterance.pitch = 1.05;
   window.speechSynthesis.speak(utterance);
+}
+
+async function primeHourAudio(hourAudio: Map<number, HTMLAudioElement>) {
+  for (let hour = 1; hour <= 6; hour += 1) {
+    const audio = getHourAudio(hour, hourAudio);
+    try {
+      audio.muted = true;
+      await audio.play();
+      audio.pause();
+      audio.currentTime = 0;
+      audio.muted = false;
+    } catch {
+      audio.muted = false;
+      audio.load();
+    }
+  }
+}
+
+async function playRecordedHour(hour: number, hourAudio: Map<number, HTMLAudioElement>) {
+  const audio = getHourAudio(hour, hourAudio);
+  audio.pause();
+  audio.currentTime = 0;
+  await audio.play();
+}
+
+function getHourAudio(hour: number, hourAudio: Map<number, HTMLAudioElement>) {
+  const existing = hourAudio.get(hour);
+  if (existing) return existing;
+
+  const audio = new Audio(remoteTtsUrl(`${hour}点了`));
+  audio.preload = "auto";
+  audio.setAttribute("playsinline", "true");
+  hourAudio.set(hour, audio);
+  return audio;
+}
+
+function remoteTtsUrl(text: string) {
+  const query = new URLSearchParams({
+    ie: "UTF-8",
+    client: "tw-ob",
+    tl: "zh-CN",
+    q: text
+  });
+  return `https://translate.google.com/translate_tts?${query.toString()}`;
 }
 
 async function ensureAudioContext(audioContextRef: MutableRefObject<AudioContext | null>) {
