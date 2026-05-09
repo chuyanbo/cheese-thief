@@ -423,21 +423,11 @@ function getHourAudio(hour: number, hourAudio: Map<number, HTMLAudioElement>) {
   const existing = hourAudio.get(hour);
   if (existing) return existing;
 
-  const audio = new Audio(remoteTtsUrl(`${hour}点了`));
+  const audio = new Audio(`/audio/hour-${hour}.mp3`);
   audio.preload = "auto";
   audio.setAttribute("playsinline", "true");
   hourAudio.set(hour, audio);
   return audio;
-}
-
-function remoteTtsUrl(text: string) {
-  const query = new URLSearchParams({
-    ie: "UTF-8",
-    client: "tw-ob",
-    tl: "zh-CN",
-    q: text
-  });
-  return `https://translate.google.com/translate_tts?${query.toString()}`;
 }
 
 async function ensureAudioContext(audioContextRef: MutableRefObject<AudioContext | null>) {
