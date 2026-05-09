@@ -4,6 +4,7 @@ import {
   advanceNight,
   beginVoting,
   chooseInspectTarget,
+  chooseAccomplices,
   confirmIdentity,
   createPlayer,
   createRoom,
@@ -175,5 +176,19 @@ describe("game engine", () => {
     expect(room.phase).toBe("discussion");
     expect(room.phaseEndsAt).toBeUndefined();
     expect(room.selectedAccompliceIds).toHaveLength(1);
+  });
+
+  it("keeps accomplice phase running after the thief chooses accomplices", () => {
+    const room = makeRoom(5);
+    startGame(room, "p1", randomFrom([0, 0, 0.2, 0.2, 0.4, 0.5]));
+    confirmAll(room);
+    finishNight(room);
+    expect(room.phase).toBe("accomplice");
+    chooseAccomplices(room, room.thiefId ?? "", ["p2"]);
+    expect(room.phase).toBe("accomplice");
+    expect(room.players.find((player) => player.id === "p2")?.isAccomplice).toBe(false);
+    finalizeAccompliceSelection(room);
+    expect(room.phase).toBe("discussion");
+    expect(room.players.find((player) => player.id === "p2")?.isAccomplice).toBe(true);
   });
 });

@@ -147,20 +147,21 @@ export function skipCurrentInspect(room: Room): void {
 export function chooseAccomplices(room: Room, playerId: string, targetIds: string[]): void {
   if (room.phase !== "accomplice") throw new Error("现在不能选择共犯。");
   if (room.thiefId !== playerId) throw new Error("只有奶酪大盗可以选择共犯。");
-  setAccomplices(room, targetIds);
+  validateAccompliceTargets(room, targetIds);
+  room.selectedAccompliceIds = targetIds;
 }
 
 export function finalizeAccompliceSelection(room: Room, random = Math.random): void {
   if (room.phase !== "accomplice") return;
-  const candidates = room.players.filter((player) => player.id !== room.thiefId);
-  const shuffled = shuffle(candidates, random);
-  setAccomplices(
-    room,
-    shuffled.slice(0, room.requiredAccomplices).map((player) => player.id)
-  );
+  if (room.selectedAccompliceIds.length !== room.requiredAccomplices) {
+    const candidates = room.players.filter((player) => player.id !== room.thiefId);
+    const shuffled = shuffle(candidates, random);
+    room.selectedAccompliceIds = shuffled.slice(0, room.requiredAccomplices).map((player) => player.id);
+  }
+  applyAccomplicesAndStartDiscussion(room);
 }
 
-function setAccomplices(room: Room, targetIds: string[]): void {
+function validateAccompliceTargets(room: Room, targetIds: string[]): void {
   if (targetIds.length !== room.requiredAccomplices) {
     throw new Error(`请选择 ${room.requiredAccomplices} 名共犯。`);
   }
@@ -169,9 +170,14 @@ function setAccomplices(room: Room, targetIds: string[]): void {
   for (const id of targetIds) {
     const player = findPlayer(room, id);
     if (player.id === room.thiefId) throw new Error("奶酪大盗不能选择自己。");
-    player.isAccomplice = true;
   }
-  room.selectedAccompliceIds = targetIds;
+}
+
+function applyAccomplicesAndStartDiscussion(room: Room): void {
+  validateAccompliceTargets(room, room.selectedAccompliceIds);
+  for (const id of room.selectedAccompliceIds) {
+    findPlayer(room, id).isAccomplice = true;
+  }
   room.phaseEndsAt = undefined;
   room.phase = "discussion";
 }
@@ -221,7 +227,10 @@ export function toPrivateState(room: Room, playerId: string): PrivateState {
   const player = findPlayer(room, playerId);
   const awake = isAwake(room, player);
   const awakePlayers = currentAwakePlayers(room);
-  const thiefCanChoose = room.phase === "accomplice" && room.thiefId === player.id;
+  const thiefCanChoose =
+    room.phase === "accomplice" &&
+    room.thiefId === player.id &&
+    room.selectedAccompliceIds.length !== room.requiredAccomplices;
   return {
     playerId: player.id,
     role: player.role,

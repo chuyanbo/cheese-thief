@@ -257,7 +257,13 @@ export function App() {
 
       {room.phase === "accomplice" && (
         <section className="panel">
-          <h2>{me.canChooseAccomplice ? "选择共犯" : "等待大盗选择共犯"}</h2>
+          <h2>
+            {me.canChooseAccomplice
+              ? "选择共犯"
+              : room.selectedAccomplices === room.requiredAccomplices
+                ? "共犯已选择，等待天亮"
+                : "等待大盗选择共犯"}
+          </h2>
           <p className="countdown">{formatRemaining(room.phaseEndsAt, now)}</p>
           {me.canChooseAccomplice && (
             <>
